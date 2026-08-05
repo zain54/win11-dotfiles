@@ -50,6 +50,7 @@ alias hello='echo hi'
 cd() {
     builtin cd "$@" && ls;
 }
+alias hidebar='psrun ~/.local/bin/Hide-TaskbarOnMonitor.ps1'
 
 # Prompt theme
 source ~/.config/zsh/themes/powerlevel10k/powerlevel10k.zsh-theme
@@ -59,3 +60,6 @@ source ~/.p10k.zsh
 source ~/.config/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 source ~/.config/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
 source ~/.config/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
+
+# psrun
+psrun() { powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$1")" "${@[2,-1]}"; }

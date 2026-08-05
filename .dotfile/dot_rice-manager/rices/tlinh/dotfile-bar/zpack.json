@@ -27,14 +27,32 @@
       },
       "presets": [
         {
-          "name": "default",
+          "name": "mon1",
           "anchor": "top_center",
           "offsetX": "0px",
           "offsetY": "0px",
           "width": "100%",
           "height": "48px",
           "monitorSelection": {
-            "type": "all"
+            "type": "index",
+            "match": 1
+          },
+          "dockToEdge": {
+            "enabled": true,
+            "edge": "top",
+            "windowMargin": "0px"
+          }
+        },
+        {
+          "name": "mon2",
+          "anchor": "top_center",
+          "offsetX": "0px",
+          "offsetY": "0px",
+          "width": "100%",
+          "height": "48px",
+          "monitorSelection": {
+            "type": "index",
+            "match": 2
           },
           "dockToEdge": {
             "enabled": true,

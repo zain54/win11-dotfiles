@@ -4,7 +4,12 @@
     {
       "pack": "dotfile-bar",
       "widget": "config",
-      "preset": "default"
+      "preset": "mon1"
+    },
+    {
+      "pack": "dotfile-bar",
+      "widget": "config",
+      "preset": "mon2"
     }
   ]
 }
