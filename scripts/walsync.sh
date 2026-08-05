@@ -9,6 +9,7 @@
 #   ./walsync.sh source <image>         # remember which image drives the palette
 #   ./walsync.sh gen [image]            # build palette + wal.css (uses saved source if omitted)
 #   ./walsync.sh gen <image> -b wal     # pick a different pywal backend
+#   ./walsync.sh sync [image]           # gen + glaze + restart Zebar (use after a wallpaper change)
 #   ./walsync.sh glaze                  # push palette into GlazeWM border colours
 #   ./walsync.sh show                   # print the current palette
 #   ./walsync.sh we-scan                # list Wallpaper Engine wallpapers + previews
@@ -197,6 +198,19 @@ glaze() {
     || echo "Reload failed — press alt+shift+r."
 }
 
+restart_zebar() {
+  taskkill -IM zebar.exe -F >/dev/null 2>&1 || true
+  sleep 1
+  start zebar >/dev/null 2>&1 &
+  echo "Zebar restarted."
+}
+
+sync_all() {  # sync_all [image]
+  gen "${1:-}"
+  glaze
+  restart_zebar
+}
+
 we_scan() {
   local roots=(
     "/c/Program Files (x86)/Steam/steamapps/workshop/content/431960"
@@ -236,6 +250,11 @@ case "$cmd" in
     [ $# -eq 1 ] || { echo "source needs one image path"; exit 1; }
     [ -f "$1" ] || { echo "No such image: $1"; exit 1; }
     set_source "$1"
+    ;;
+  sync)
+    img=""
+    if [ $# -ge 1 ]; then img="$1"; shift; fi
+    sync_all "$img"
     ;;
   show)    show ;;
   glaze)

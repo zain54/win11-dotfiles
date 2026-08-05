@@ -44,9 +44,9 @@ alias update='winget upgrade --all && pacman -Syu --noconfirm'
 alias btop='~/.local/bin/btop/btop4win.exe'
 rice() {
   ~/.rice-manager/rice.sh "$@" || return
-  ~/.local/share/chezmoi/scripts/walsync.sh gen
-  ~/.local/share/chezmoi/scripts/walsync.sh glaze
+  ~/.local/share/chezmoi/scripts/walsync.sh sync
 }
+repaint() { ~/.local/share/chezmoi/scripts/walsync.sh sync "$@"; }
 alias wallpaper='~/.rice-manager/wallpaper.sh'
 alias ala='alacritty --working-directory=$(pwd) & disown'
 alias cmsp='cd $(chezmoi source-path)/..'
