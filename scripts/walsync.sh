@@ -6,8 +6,10 @@
 # Usage:
 #   ./walsync.sh wire                   # add wal.css link to every theme's bar.html
 #   ./walsync.sh unwire                 # remove it again
-#   ./walsync.sh gen <image>            # build palette, write wal.css
+#   ./walsync.sh source <image>         # remember which image drives the palette
+#   ./walsync.sh gen [image]            # build palette + wal.css (uses saved source if omitted)
 #   ./walsync.sh gen <image> -b wal     # pick a different pywal backend
+#   ./walsync.sh glaze                  # push palette into GlazeWM border colours
 #   ./walsync.sh show                   # print the current palette
 #   ./walsync.sh we-scan                # list Wallpaper Engine wallpapers + previews
 #
@@ -20,6 +22,7 @@ set -euo pipefail
 BACKEND="haishoku"
 CACHE="$HOME/.cache/wal/colors.json"
 CSS_OUT="$HOME/.glzr/zebar/dotfile-bar/wal.css"
+SOURCE_FILE="$HOME/.config/walsync/source"
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
@@ -30,9 +33,25 @@ wal_cmd() {
   fi
 }
 
+set_source() {
+  mkdir -p "$(dirname "$SOURCE_FILE")"
+  printf '%s\n' "$1" > "$SOURCE_FILE"
+  echo "Palette source set to: $1"
+}
+
 gen() {
-  local img="$1"; shift
+  local img="${1:-}"
+  if [ -z "$img" ]; then
+    [ -f "$SOURCE_FILE" ] || {
+      echo "No image given and no saved source."
+      echo "Run: $0 source <image>   (or: $0 gen <image>)"
+      exit 1
+    }
+    img="$(cat "$SOURCE_FILE")"
+    echo "Using saved source: $img"
+  fi
   [ -f "$img" ] || { echo "No such image: $img"; exit 1; }
+  set_source "$img" >/dev/null
 
   # -n  don't set the wallpaper (WE owns that)
   # -s  don't write terminal sequences
@@ -203,8 +222,8 @@ we_scan() {
 cmd="${1:-}"; shift || true
 case "$cmd" in
   gen)
-    [ $# -ge 1 ] || { echo "gen needs an image path"; exit 1; }
-    img="$1"; shift
+    img=""
+    if [ $# -ge 1 ] && [ "${1#-}" = "$1" ]; then img="$1"; shift; fi
     while [ $# -gt 0 ]; do
       case "$1" in
         -b|--backend) BACKEND="$2"; shift 2 ;;
@@ -212,6 +231,11 @@ case "$cmd" in
       esac
     done
     gen "$img"
+    ;;
+  source)
+    [ $# -eq 1 ] || { echo "source needs one image path"; exit 1; }
+    [ -f "$1" ] || { echo "No such image: $1"; exit 1; }
+    set_source "$1"
     ;;
   show)    show ;;
   glaze)
