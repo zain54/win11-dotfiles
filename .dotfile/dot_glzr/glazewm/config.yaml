@@ -172,6 +172,7 @@ window_rules:
     match:
       # Custom rules
       - window_process: {regex: "LeagueClientUx"} # LoL client
+      - window_process: {equals: "mmc"} # Task Scheduler
       # Ignores any Zebar windows.
       - window_process: {equals: "zebar"}
       - window_title: {regex: "[Pp]icture.in.[Pp]icture"}
