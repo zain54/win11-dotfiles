@@ -127,7 +127,7 @@ window_behavior:
       maximized: false
       # Whether to show fullscreen windows as always on top.
 
-      shown_on_top: true
+      shown_on_top: false
 workspaces:
   # Middle and also main screen
   - name: "1"
@@ -153,26 +153,25 @@ workspaces:
     bind_to_monitor: 1
   - name: "8"
     keep_alive: true
-    bind_to_monitor: 1
+    bind_to_monitor: 2
   - name: "9"
     keep_alive: true
-    bind_to_monitor: 1
+    bind_to_monitor: 2
   - name: "0"
     keep_alive: true
-    bind_to_monitor: 1
+    bind_to_monitor: 2
   # Workspace for leftmost screen to prevent error
   - name: "LeftMonitorFix"
     keep_alive: false
     bind_to_monitor: 0
-  - name: "RightMonitorFix"
-    keep_alive: false
-    bind_to_monitor: 2
 window_rules:
   - commands: ["ignore"]
     match:
       # Custom rules
       - window_process: {regex: "LeagueClientUx"} # LoL client
       - window_process: {equals: "mmc"} # Task Scheduler
+      - window_process: {regex: "HYP|GenshinImpact|YuanShen|StarRail|BH3|ZenlessZoneZero"} # HYP Games
+
       # Ignores any Zebar windows.
       - window_process: {equals: "zebar"}
       - window_title: {regex: "[Pp]icture.in.[Pp]icture"}
@@ -409,3 +408,6 @@ keybindings:
     bindings: ["alt+shift+9"]
   - commands: ["move --workspace 0", "focus --workspace 0"]
     bindings: ["alt+shift+0"]
+
+  - commands: ["ignore"]
+    bindings: ["alt+shift+i"]

@@ -10,12 +10,30 @@ Things this repo does **not** capture. Redo these by hand after a rebuild.
 | `\\.\DISPLAY3` | DELA245 | 3840×2160 | AW3225QF, primary |
 | `\\.\DISPLAY1` | AOC2703 | 2560×1440 | AOC |
 
-Three unrelated numbering schemes are in play — don't assume they line up:
+Four unrelated numbering schemes are in play — don't assume they line up:
 
+- **GlazeWM `bind_to_monitor`**: 0 = portrait, 1 = main, 2 = AOC.
 - **Zebar preset indices**: index 0 is the ARZOPA, so `zpack.json` targets 1 and 2.
   Re-probe with `./scripts/patch-bar-monitors.sh probe <n>` if displays change.
 - **Wallpaper Engine keys**: `Monitor0` is the AW3225QF (see below).
 - **Windows Settings display numbers**: whatever *Identify* shows.
+
+## Workspaces
+
+Workspaces 1–7 bind to the main AW3225QF; 8, 9 and 0 bind to the AOC.
+`LeftMonitorFix` is a `keep_alive: false` placeholder the portrait monitor
+needs — don't remove it. There used to be a matching `RightMonitorFix`; it was
+deleted, because a second workspace bound to monitor 2 competed with 8/9/0 for
+display and the AOC kept showing the placeholder instead.
+
+Two rules follow the workspaces to the AOC by design: Streamlabs opens on 9,
+and Taskmgr/vsthost/Mechvibes on 0.
+
+**`bind_to_monitor` only applies when a workspace is created.** Changing it and
+running `wm-reload-config` (`alt`+`shift`+`r`) does nothing to workspaces that
+already exist — GlazeWM has to fully exit (`alt`+`shift`+`e`) and relaunch.
+Exiting kills Zebar via `shutdown_commands`, so run `./scripts/walsync.sh sync`
+afterwards to restore the palette.
 
 ## Windhawk
 
@@ -83,11 +101,25 @@ stub shadows the real interpreter.
 ## GlazeWM ignore rules
 
 Apps that break when tiled go in the first `window_rules` block
-(`commands: ["ignore"]`). Currently: the League client, and `mmc` (Task
-Scheduler, Event Viewer, Services — their dialogs get cut off and you can't
-reach the buttons).
+(`commands: ["ignore"]`). Currently: the League client, `mmc` (Task Scheduler,
+Event Viewer, Services — their dialogs get cut off and you can't reach the
+buttons), HoYoPlay and its games
+(`HYP|GenshinImpact|YuanShen|StarRail|BH3|ZenlessZoneZero`), and upstream's
+list of six specific game executables.
 
-`alt`+`shift`+`space` floats the focused window as a one-off escape hatch.
+That upstream games regex is *not* a general rule — it's jade-tam's personal
+list, so anything you play that isn't in it gets tiled. There is no canonical
+community ignore list; everyone maintains their own.
+
+`alt`+`shift`+`i` is bound to `ignore` as a general escape hatch — hit it when
+something misbehaves rather than editing YAML mid-session. Note ignoring is
+one-way; the only way back is `alt`+`shift`+`r`.
+
+`alt`+`shift`+`space` floats the focused window as a one-off.
+
+`state_defaults.fullscreen.shown_on_top` is set to `false` (upstream's default,
+though this repo shipped `true`). Forcing fullscreen windows always-on-top
+pushes overlays like Blitz and Discord underneath them.
 
 To find a process name: `glazewm query windows | jq -r '.data.windows[] | "\(.processName)  |  \(.title)"'`
 
