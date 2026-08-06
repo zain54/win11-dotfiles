@@ -170,6 +170,8 @@ workspaces:
 window_rules:
   - commands: ["ignore"]
     match:
+      # Custom rules
+      - window_process: {regex: "LeagueClientUx"} # LoL client
       # Ignores any Zebar windows.
       - window_process: {equals: "zebar"}
       - window_title: {regex: "[Pp]icture.in.[Pp]icture"}

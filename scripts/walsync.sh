@@ -12,6 +12,8 @@
 #   ./walsync.sh sync [image]           # gen + glaze + restart Zebar (use after a wallpaper change)
 #   ./walsync.sh glaze                  # push palette into GlazeWM border colours
 #   ./walsync.sh show                   # print the current palette
+#   ./walsync.sh we-current [key]       # show the wallpaper currently on that monitor
+#   ./walsync.sh watch [seconds]        # resync automatically when WE's wallpaper changes
 #   ./walsync.sh we-scan                # list Wallpaper Engine wallpapers + previews
 #
 # Backends worth trying: haishoku (default here), colorthief, wal, colorz.
@@ -43,13 +45,16 @@ set_source() {
 gen() {
   local img="${1:-}"
   if [ -z "$img" ]; then
-    [ -f "$SOURCE_FILE" ] || {
-      echo "No image given and no saved source."
-      echo "Run: $0 source <image>   (or: $0 gen <image>)"
+    if img="$(we_current 2>/dev/null)" && [ -n "$img" ]; then
+      echo "Auto-detected wallpaper for $WE_MONITOR_KEY: $img"
+    elif [ -f "$SOURCE_FILE" ]; then
+      img="$(cat "$SOURCE_FILE")"
+      echo "Auto-detect failed; using saved source: $img"
+    else
+      echo "No image given, auto-detect failed, and no saved source."
+      echo "Run: $0 we-current   to debug, or: $0 gen <image>"
       exit 1
-    }
-    img="$(cat "$SOURCE_FILE")"
-    echo "Using saved source: $img"
+    fi
   fi
   [ -f "$img" ] || { echo "No such image: $img"; exit 1; }
   set_source "$img" >/dev/null
@@ -198,6 +203,75 @@ glaze() {
     || echo "Reload failed — press alt+shift+r."
 }
 
+WE_MONITOR_KEY="Monitor0"   # WE's key for the monitor whose wallpaper drives the palette
+
+we_config() {
+  local c
+  for c in \
+    "/c/Program Files (x86)/Steam/steamapps/common/wallpaper_engine/config.json" \
+    "/d/SteamLibrary/steamapps/common/wallpaper_engine/config.json" \
+    "/e/SteamLibrary/steamapps/common/wallpaper_engine/config.json"
+  do
+    [ -f "$c" ] && { printf '%s' "$c"; return 0; }
+  done
+  return 1
+}
+
+# Path of the wallpaper asset currently assigned to $WE_MONITOR_KEY.
+we_wallpaper_file() {
+  local cfg
+  cfg="$(we_config)" || { echo "Can't find Wallpaper Engine config.json" >&2; return 1; }
+
+  # Target the live `wallpaperconfig` block. Saved profiles also contain a
+  # `selectedwallpapers` map, but nested under `config`, so anchor on the key.
+  jq -r --arg mon "$WE_MONITOR_KEY" '
+    [paths as $p | select($p[-1] == "wallpaperconfig") | $p] as $wp
+    | if ($wp | length) == 0 then empty
+      else getpath($wp[0]).selectedwallpapers[$mon].file // empty
+      end
+  ' "$cfg" 2>/dev/null | head -n1
+}
+
+# Preview image for that wallpaper (pywal can't sample a running scene).
+we_current() {
+  local file dir preview
+  file="$(we_wallpaper_file)"
+  [ -n "$file" ] || {
+    echo "No wallpaper found for $WE_MONITOR_KEY" >&2
+    echo "Available monitor keys:" >&2
+    jq -r '[paths as $p | select($p[-1] == "wallpaperconfig") | $p] as $wp
+           | getpath($wp[0]).selectedwallpapers | keys[]' "$(we_config)" >&2 2>/dev/null
+    return 1
+  }
+  dir="$(dirname "$(cygpath -u "$file" 2>/dev/null || printf '%s' "$file")")"
+  preview="$(ls "$dir"/preview.* 2>/dev/null | head -n1 || true)"
+  [ -n "$preview" ] || { echo "No preview.* in $dir" >&2; return 1; }
+  printf '%s\n' "$preview"
+}
+
+# Poll config.json; resync when the primary monitor's wallpaper actually changes.
+watch_we() {
+  local cfg interval last_mtime mtime current saved
+  cfg="$(we_config)" || { echo "Can't find Wallpaper Engine config.json" >&2; exit 1; }
+  interval="${1:-5}"
+  last_mtime=""
+  echo "Watching $cfg every ${interval}s. Ctrl+C to stop."
+
+  while true; do
+    mtime="$(stat -c %Y "$cfg" 2>/dev/null || echo 0)"
+    if [ "$mtime" != "$last_mtime" ]; then
+      last_mtime="$mtime"
+      current="$(we_current 2>/dev/null || true)"
+      saved="$([ -f "$SOURCE_FILE" ] && cat "$SOURCE_FILE" || true)"
+      if [ -n "$current" ] && [ "$current" != "$saved" ]; then
+        echo "Wallpaper changed -> $current"
+        sync_all "$current"
+      fi
+    fi
+    sleep "$interval"
+  done
+}
+
 restart_zebar() {
   taskkill -IM zebar.exe -F >/dev/null 2>&1 || true
   sleep 1
@@ -269,6 +343,13 @@ case "$cmd" in
     ;;
   wire)    wire ;;
   unwire)  unwire ;;
+  we-current)
+    [ $# -eq 0 ] || WE_MONITOR_KEY="$1"
+    we_current
+    ;;
+  watch)
+    watch_we "${1:-5}"
+    ;;
   we-scan) we_scan ;;
   *) sed -n '3,16p' "$0"; exit 1 ;;
 esac
