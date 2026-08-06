@@ -59,12 +59,27 @@ gen() {
   [ -f "$img" ] || { echo "No such image: $img"; exit 1; }
   set_source "$img" >/dev/null
 
-  # -n  don't set the wallpaper (WE owns that)
-  # -s  don't write terminal sequences
-  # -t  don't touch the running terminal
-  # -e  don't reload external programs
-  wal_cmd -i "$(cygpath -w "$img" 2>/dev/null || printf '%s' "$img")" \
-          --backend "$BACKEND" -n -s -t -e
+  local winimg b tried ok
+  winimg="$(cygpath -w "$img" 2>/dev/null || printf '%s' "$img")"
+  ok=0
+  tried=""
+
+  # Some images (near-monochrome ones especially) make a backend return fewer
+  # than 16 colours, which pywal then crashes on. Fall through to another.
+  for b in "$BACKEND" colorthief wal colorz; do
+    case " $tried " in *" $b "*) continue ;; esac
+    tried="$tried $b"
+    if wal_cmd -i "$winimg" --backend "$b" -n -s -t -e 2>/dev/null; then
+      BACKEND="$b"; ok=1; break
+    fi
+    echo "  backend '$b' failed, trying next..."
+  done
+
+  if [ "$ok" -eq 0 ]; then
+    echo "All backends failed on: $img" >&2
+    echo "Keeping the existing palette." >&2
+    return 1
+  fi
 
   [ -f "$CACHE" ] || { echo "pywal did not write $CACHE"; exit 1; }
   echo "Palette written to $CACHE (backend: $BACKEND)"
@@ -265,7 +280,7 @@ watch_we() {
       saved="$([ -f "$SOURCE_FILE" ] && cat "$SOURCE_FILE" || true)"
       if [ -n "$current" ] && [ "$current" != "$saved" ]; then
         echo "Wallpaper changed -> $current"
-        sync_all "$current"
+        sync_all "$current" || echo "  sync failed; continuing to watch."
       fi
     fi
     sleep "$interval"
@@ -280,7 +295,7 @@ restart_zebar() {
 }
 
 sync_all() {  # sync_all [image]
-  gen "${1:-}"
+  gen "${1:-}" || return 1
   glaze
   restart_zebar
 }
