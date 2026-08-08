@@ -63,6 +63,10 @@ set_glazewm_config() {
 }
 
 # Set VSCode theme
+# NOTE: colours are owned by the wallpaper palette (walsync + the Wal Theme
+# extension). The per-theme JSON files intentionally no longer contain
+# `workbench.colorTheme` or `workbench.colorCustomizations` — this step now
+# only applies fonts, font sizes and the icon theme.
 set_vscode_theme() {
   echo "Applying VSCode theme..."
   echo "$(jq -s '.[0] * .[1]' ~/AppData/Roaming/Code/User/settings.json ./rices/$theme/vscode-theme-settings.json)" > tmp.json && mv tmp.json ~/AppData/Roaming/Code/User/settings.json
@@ -70,13 +74,14 @@ set_vscode_theme() {
 }
 
 # Set windows terminal theme
+# NOTE: the colorScheme line was removed — `walsync term` sets the scheme from
+# the wallpaper palette. Only the per-theme font is applied here.
 set_windows_terminal_theme() {
-  echo "Applying windows terminal theme..."
+  echo "Applying windows terminal font..."
   SETTING_FILE_PATH=$USERPROFILE\\AppData\\Local\\Packages\\Microsoft.WindowsTerminal_8wekyb3d8bbwe\\LocalState\\settings.json
   RICE_SETTING_FILE_PATH=./rices/$theme/settings.json
-  jq ".profiles.defaults.colorScheme = input.windowsTerminalTheme" $SETTING_FILE_PATH $RICE_SETTING_FILE_PATH > tmp.json && mv tmp.json $SETTING_FILE_PATH
   jq ".profiles.defaults.font += input.windowsTerminalFont" $SETTING_FILE_PATH $RICE_SETTING_FILE_PATH > tmp.json && mv tmp.json $SETTING_FILE_PATH
-  echo "✅ Windows terminal theme applied!"
+  echo "✅ Windows terminal font applied!"
 }
 
 # Change windows light/dark mode

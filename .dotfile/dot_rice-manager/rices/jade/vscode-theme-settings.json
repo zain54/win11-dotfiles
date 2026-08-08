@@ -1,14 +1,9 @@
 {
-  "workbench.colorTheme": "Everforest Dark",
   "workbench.iconTheme": "material-icon-theme",
   "material-icon-theme.folders.color": "#b1be74",
   "material-icon-theme.files.color": "#b39a8d",
   "editor.fontFamily": "'SpaceMono Nerd Font'",
   "editor.fontSize": 16,
   "terminal.integrated.fontSize": 16,
-  "workbench.colorCustomizations": {
-    "editorCursor.foreground": "#ddb169",
-    "terminalCursor.foreground": "#ddb169"
-  },
   "fonted.font": "SpaceMono Nerd Font"
 }

@@ -11,6 +11,7 @@
 #   ./walsync.sh gen <image> -b wal     # pick a different pywal backend
 #   ./walsync.sh sync [image]           # gen + glaze + restart Zebar (use after a wallpaper change)
 #   ./walsync.sh glaze                  # push palette into GlazeWM border colours
+#   ./walsync.sh term                   # push palette into Windows Terminal
 #   ./walsync.sh show                   # print the current palette
 #   ./walsync.sh we-current [key]       # show the wallpaper currently on that monitor
 #   ./walsync.sh watch [seconds]        # resync automatically when WE's wallpaper changes
@@ -287,6 +288,57 @@ watch_we() {
   done
 }
 
+WT_SETTINGS="$HOME/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+WT_SCHEME_NAME="wal"
+
+# Push the palette into Windows Terminal as a colour scheme, and make it the
+# default for every profile.
+term() {
+  [ -f "$CACHE" ]       || { echo "No palette yet — run: $0 gen <image>"; exit 1; }
+  [ -f "$WT_SETTINGS" ] || { echo "No Windows Terminal settings at $WT_SETTINGS" >&2; return 1; }
+
+  # settings.json is JSONC when Terminal has written its default comments.
+  if ! jq empty "$WT_SETTINGS" 2>/dev/null; then
+    echo "Windows Terminal settings.json isn't valid JSON (comments?)." >&2
+    echo "Open Terminal's settings UI and save once to normalise it, then retry." >&2
+    return 1
+  fi
+
+  local scheme tmp
+  scheme="$(jq --arg name "$WT_SCHEME_NAME" '
+    .colors as $c | .special as $s | {
+      name:                  $name,
+      background:            $s.background,
+      foreground:            $s.foreground,
+      cursorColor:           $s.cursor,
+      selectionBackground:   $c.color8,
+      black:                 $c.color0,
+      red:                   $c.color1,
+      green:                 $c.color2,
+      yellow:                $c.color3,
+      blue:                  $c.color4,
+      purple:                $c.color5,
+      cyan:                  $c.color6,
+      white:                 $c.color7,
+      brightBlack:           $c.color8,
+      brightRed:             $c.color9,
+      brightGreen:           $c.color10,
+      brightYellow:          $c.color11,
+      brightBlue:            $c.color12,
+      brightPurple:          $c.color13,
+      brightCyan:            $c.color14,
+      brightWhite:           $c.color15
+    }' "$CACHE")"
+
+  tmp="$(mktemp)"
+  jq --argjson scheme "$scheme" --arg name "$WT_SCHEME_NAME" '
+    .schemes = (((.schemes // []) | map(select(.name != $name))) + [$scheme])
+    | .profiles.defaults.colorScheme = $name
+  ' "$WT_SETTINGS" > "$tmp"
+  mv "$tmp" "$WT_SETTINGS"
+  echo "Windows Terminal scheme '$WT_SCHEME_NAME' updated."
+}
+
 restart_zebar() {
   taskkill -IM zebar.exe -F >/dev/null 2>&1 || true
   sleep 1
@@ -297,6 +349,7 @@ restart_zebar() {
 sync_all() {  # sync_all [image]
   gen "${1:-}" || return 1
   glaze
+  term || true
   restart_zebar
 }
 
@@ -356,6 +409,7 @@ case "$cmd" in
     done
     glaze
     ;;
+  term)    term ;;
   wire)    wire ;;
   unwire)  unwire ;;
   we-current)
