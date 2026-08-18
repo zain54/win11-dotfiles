@@ -35,6 +35,8 @@ set_zebar_theme() {
 }
 
 # Set glazewm config
+# NOTE: GlazeWM was uninstalled; this is no longer called. Left in place so an
+# upstream merge doesn't conflict on a deleted block.
 set_glazewm_config() {
   echo "Applying GlazeWM border color..."
   SETTING_FILE_PATH=$USERPROFILE\\.glzr\\glazewm\\config.yaml
@@ -124,7 +126,7 @@ for theme in "${avaiableThemes[@]}"; do
     set_windows_terminal_theme
     set_zebar_theme
     set_vscode_theme
-    set_glazewm_config
+    # set_glazewm_config  # removed: GlazeWM uninstalled
     # change_windows_lightdark_mode # Disabled, currently too buggy
 
     echo " "

@@ -48,7 +48,7 @@
       "keys": "alt+shift+d"
     }
   ],
-  "launchMode": "focus",
+  "launchMode": "default",
   "newTabMenu": [
     {
       "type": "remainingProfiles"
@@ -57,12 +57,12 @@
   "profiles": {
     "defaults": {
       "adjustIndistinguishableColors": "indexed",
-      "colorScheme": "Jade",
+      "colorScheme": "wal",
       "cursorShape": "vintage",
       "elevate": true,
       "font": {
         "cellHeight": "1.2",
-        "face": "SpaceMono Nerd Font",
+        "face": "DepartureMono Nerd Font",
         "size": 12
       },
       "opacity": 90,
@@ -267,6 +267,29 @@
       "selectionBackground": "#4D4160",
       "white": "#998BAD",
       "yellow": "#C7C691"
+    },
+    {
+      "background": "#0B0B1A",
+      "black": "#0B0B1A",
+      "blue": "#7C7F8D",
+      "brightBlack": "#5A5A6F",
+      "brightBlue": "#7C7F8D",
+      "brightCyan": "#A2A4A1",
+      "brightGreen": "#555D62",
+      "brightPurple": "#A8A481",
+      "brightRed": "#4A4D55",
+      "brightWhite": "#C2C2C5",
+      "brightYellow": "#73716D",
+      "cursorColor": "#C2C2C5",
+      "cyan": "#A2A4A1",
+      "foreground": "#C2C2C5",
+      "green": "#555D62",
+      "name": "wal",
+      "purple": "#A8A481",
+      "red": "#4A4D55",
+      "selectionBackground": "#5A5A6F",
+      "white": "#C2C2C5",
+      "yellow": "#73716D"
     }
   ],
   "showTabsInTitlebar": true,

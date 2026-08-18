@@ -9,8 +9,7 @@
 #   ./walsync.sh source <image>         # remember which image drives the palette
 #   ./walsync.sh gen [image]            # build palette + wal.css (uses saved source if omitted)
 #   ./walsync.sh gen <image> -b wal     # pick a different pywal backend
-#   ./walsync.sh sync [image]           # gen + glaze + restart Zebar (use after a wallpaper change)
-#   ./walsync.sh glaze                  # push palette into GlazeWM border colours
+#   ./walsync.sh sync [image]           # gen + term + restart Zebar (use after a wallpaper change)
 #   ./walsync.sh term                   # push palette into Windows Terminal
 #   ./walsync.sh show                   # print the current palette
 #   ./walsync.sh we-current [key]       # show the wallpaper currently on that monitor
@@ -178,48 +177,12 @@ unwire() {
   echo "Next: chezmoi apply"
 }
 
-GLAZE_CFG="$HOME/.glzr/glazewm/config.yaml"
-FOCUSED_KEY="color7"
-UNFOCUSED_KEY="background"
-
 palette_color() {  # palette_color <key>  — colorN, or background/foreground
   case "$1" in
     background|foreground|cursor) jq -r ".special.$1" "$CACHE" ;;
     *)                            jq -r ".colors.$1"  "$CACHE" ;;
   esac
 }
-
-glaze() {
-  [ -f "$CACHE" ]     || { echo "No palette yet — run: $0 gen <image>"; exit 1; }
-  [ -f "$GLAZE_CFG" ] || { echo "No config at $GLAZE_CFG"; exit 1; }
-
-  local foc unfoc tmp
-  foc="$(palette_color "$FOCUSED_KEY")"
-  unfoc="$(palette_color "$UNFOCUSED_KEY")"
-  tmp="$(mktemp)"
-
-  # Two `color:` keys live under border: — first in focused_window, second in
-  # other_windows. Track which block we're in rather than blind-replacing.
-  awk -v foc="$foc" -v unfoc="$unfoc" '
-    /^[ \t]*focused_window:/  { blk = "foc" }
-    /^[ \t]*other_windows:/   { blk = "unfoc" }
-    /^[ \t]*color:[ \t]*"#/ {
-      match($0, /^[ \t]*/)
-      indent = substr($0, 1, RLENGTH)
-      if (blk == "foc")        { print indent "color: \"" foc "\"";   next }
-      else if (blk == "unfoc") { print indent "color: \"" unfoc "\""; next }
-    }
-    { print }
-  ' "$GLAZE_CFG" > "$tmp"
-  mv "$tmp" "$GLAZE_CFG"
-
-  echo "GlazeWM borders: focused $foc / other $unfoc"
-  glazewm command wm-reload-config >/dev/null 2>&1 \
-    && echo "Config reloaded." \
-    || echo "Reload failed — press alt+shift+r."
-}
-
-WE_MONITOR_KEY="Monitor0"   # WE's key for the monitor whose wallpaper drives the palette
 
 we_config() {
   local c
@@ -348,7 +311,6 @@ restart_zebar() {
 
 sync_all() {  # sync_all [image]
   gen "${1:-}" || return 1
-  glaze
   term || true
   restart_zebar
 }
@@ -399,16 +361,6 @@ case "$cmd" in
     sync_all "$img"
     ;;
   show)    show ;;
-  glaze)
-    while [ $# -gt 0 ]; do
-      case "$1" in
-        --focused)   FOCUSED_KEY="$2"; shift 2 ;;
-        --unfocused) UNFOCUSED_KEY="$2"; shift 2 ;;
-        *) echo "unknown option: $1"; exit 1 ;;
-      esac
-    done
-    glaze
-    ;;
   term)    term ;;
   wire)    wire ;;
   unwire)  unwire ;;
