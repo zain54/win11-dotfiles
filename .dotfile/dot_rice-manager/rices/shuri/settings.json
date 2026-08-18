@@ -1,15 +1,7 @@
 {
-  "windowsTheme": "dark",
-  "windowsTerminalTheme": "Stella",
   "windowsTerminalFont": {
     "cellHeight": "1.2",
     "face": "MonaspiceRn Nerd Font Mono",
     "size": 12
-  },
-  "glazewmConfig": {
-    "focusedWindowsColor": "#c594ff",
-    "otherWindowsColor": "#2b213c",
-    "windowsGap": "8px",
-    "cornerStyle": "rounded"
   }
 }
