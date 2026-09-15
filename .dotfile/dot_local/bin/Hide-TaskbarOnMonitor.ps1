@@ -40,7 +40,8 @@ param(
     [switch]$List,
     [switch]$Show,
     [switch]$Watch,
-    [int]$IntervalSeconds = 3
+    [int]$IntervalSeconds = 3,
+    [int]$StartupDelaySeconds = 45
 )
 
 if (-not ('Win32.TaskbarHider' -as [type])) {
@@ -132,11 +133,25 @@ namespace Win32 {
 
 function Get-TargetBars {
     $bars = [Win32.TaskbarHider]::FindTaskbars()
+
+    # HARD GUARD: never hide the primary taskbar.
+    #
+    # The primary display's taskbar is a Shell_TrayWnd; the portrait monitor's
+    # is always a Shell_SecondaryTrayWnd. During boot, display metrics can be
+    # reported wrong for a few seconds — a 4K screen at 150% scaling has been
+    # seen reporting as portrait — and hiding is sticky, so a single bad read
+    # would take out the main taskbar until manually restored. Excluding the
+    # primary makes that impossible without losing anything we want to hide.
+    $bars = $bars | Where-Object { -not $_.IsPrimary -and $_.ClassName -ne 'Shell_TrayWnd' }
+
     if ($DeviceName) {
         return $bars | Where-Object { $DeviceName -contains $_.Device }
     }
-    # default: portrait monitors
-    return $bars | Where-Object { $_.Height -gt $_.Width }
+
+    # Default: portrait monitors. Require a clearly portrait aspect ratio
+    # rather than just height > width, so a transient square-ish reading
+    # during boot doesn't count.
+    return $bars | Where-Object { $_.Height -gt ($_.Width * 1.2) }
 }
 
 if ($List) {
@@ -157,7 +172,18 @@ if ($List) {
 $makeVisible = [bool]$Show
 
 function Invoke-Apply {
-    foreach ($bar in Get-TargetBars) {
+    # -Show must be able to restore ANY taskbar, including the primary one —
+    # otherwise the guard in Get-TargetBars would block the very recovery this
+    # script needs to perform. Hiding stays guarded.
+    $bars = if ($makeVisible -and $DeviceName) {
+        [Win32.TaskbarHider]::FindTaskbars() | Where-Object { $DeviceName -contains $_.Device }
+    } elseif ($makeVisible) {
+        [Win32.TaskbarHider]::FindTaskbars()
+    } else {
+        Get-TargetBars
+    }
+
+    foreach ($bar in $bars) {
         if ($bar.IsVisible -ne $makeVisible) {
             [Win32.TaskbarHider]::SetVisible($bar.Handle, $makeVisible)
             $verb = if ($makeVisible) { 'Shown' } else { 'Hidden' }
@@ -167,6 +193,12 @@ function Invoke-Apply {
 }
 
 if ($Watch) {
+    # Displays can report wrong metrics for a while after logon. Wait before
+    # the first pass so the watcher never acts on a half-initialised desktop.
+    if ($StartupDelaySeconds -gt 0) {
+        Write-Verbose "Waiting $StartupDelaySeconds s before first pass..."
+        Start-Sleep -Seconds $StartupDelaySeconds
+    }
     Write-Host "Watching. Ctrl+C to stop." -ForegroundColor Cyan
     while ($true) {
         Invoke-Apply
